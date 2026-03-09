@@ -150,4 +150,4 @@ function resetGame() {
 }
 
 resetButton.addEventListener("click", resetGame);
-resetGame();
+resetGame(); 
