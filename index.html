@@ -10,27 +10,24 @@
     <main class="game">
       <header class="game-header">
         <h1>🍕 Pizza Monster</h1>
-        <p id="modeInstruction">Pick two slices that make the current target with +!</p>
+        <p id="modeInstruction">Pick two slices that make the current target with + at Level 1!</p>
       </header>
 
       <section class="mode-picker" aria-label="Round mode selector">
         <span class="mode-label">Round mode:</span>
-        <label class="mode-option">
-          <input type="radio" name="mode" value="addition" checked />
-          <span>Addition</span>
-        </label>
-        <label class="mode-option">
-          <input type="radio" name="mode" value="subtraction" />
-          <span>Subtraction</span>
-        </label>
-        <label class="mode-option">
-          <input type="radio" name="mode" value="multiplication" />
-          <span>Multiplication</span>
-        </label>
-        <label class="mode-option">
-          <input type="radio" name="mode" value="division" />
-          <span>Division</span>
-        </label>
+        <label class="mode-option"><input type="radio" name="mode" value="addition" checked /><span>Addition</span></label>
+        <label class="mode-option"><input type="radio" name="mode" value="subtraction" /><span>Subtraction</span></label>
+        <label class="mode-option"><input type="radio" name="mode" value="multiplication" /><span>Multiplication</span></label>
+        <label class="mode-option"><input type="radio" name="mode" value="division" /><span>Division</span></label>
+      </section>
+
+      <section class="level-picker" aria-label="Difficulty level selector">
+        <span class="mode-label">Level:</span>
+        <label class="mode-option"><input type="radio" name="level" value="1" checked /><span>1</span></label>
+        <label class="mode-option"><input type="radio" name="level" value="2" /><span>2</span></label>
+        <label class="mode-option"><input type="radio" name="level" value="3" /><span>3</span></label>
+        <label class="mode-option"><input type="radio" name="level" value="4" /><span>4</span></label>
+        <label class="mode-option"><input type="radio" name="level" value="5" /><span>5</span></label>
       </section>
 
       <section class="monster-box" aria-live="polite">

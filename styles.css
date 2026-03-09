@@ -40,7 +40,8 @@ body {
   margin-bottom: 0.2rem;
 }
 
-.mode-picker {
+.mode-picker,
+.level-picker {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
