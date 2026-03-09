@@ -1,4 +1,3 @@
-const LEVEL_RANGE = [1, 2, 3, 4, 5];
 const PROGRESS_STORAGE_KEY = "pizza-monster-unlocks-v1";
 
 const OPERATION_RULES = {
@@ -11,10 +10,7 @@ const OPERATION_RULES = {
       4: { range: [4, 12], roundLength: 5 },
       5: { range: [6, 15], roundLength: 6 },
     },
-    createPair: ({ range }) => {
-      const [min, max] = range;
-      return [randomInt(min, max), randomInt(min, max)];
-    },
+    createPair: ({ range }) => [randomInt(range[0], range[1]), randomInt(range[0], range[1])],
     targetFromPair: ([a, b]) => a + b,
     matchResults: (a, b) => [a + b],
   },
@@ -49,12 +45,7 @@ const OPERATION_RULES = {
       4: { factorRange: [3, 10], roundLength: 5 },
       5: { factorRange: [4, 12], roundLength: 6 },
     },
-    createPair: ({ factorRange }) => {
-      return [
-        randomInt(factorRange[0], factorRange[1]),
-        randomInt(factorRange[0], factorRange[1]),
-      ];
-    },
+    createPair: ({ factorRange }) => [randomInt(factorRange[0], factorRange[1]), randomInt(factorRange[0], factorRange[1])],
     targetFromPair: ([a, b]) => a * b,
     matchResults: (a, b) => [a * b],
   },
@@ -90,27 +81,32 @@ const OPERATION_NAMES = {
 };
 
 const state = {
-  selected: [],
-  currentTargetIndex: 0,
-  usedNumbers: new Set(),
-  gamePlan: [],
-  sliceValues: [],
+  screen: "menu",
   mode: "addition",
   level: 1,
   unlockedLevels: null,
+  gamePlan: [],
+  sliceValues: [],
+  selected: [],
+  usedNumbers: new Set(),
+  currentTargetIndex: 0,
   levelCompleted: false,
 };
 
+const menuScreen = document.getElementById("menuScreen");
+const gameScreen = document.getElementById("gameScreen");
+const modeInputs = document.querySelectorAll('input[name="mode"]');
+const levelInputs = document.querySelectorAll('input[name="level"]');
+const startGameButton = document.getElementById("startGameButton");
+const backToMenuButton = document.getElementById("backToMenuButton");
+const resetButton = document.getElementById("resetButton");
+const nextChallengeButton = document.getElementById("nextChallengeButton");
+const modeInstruction = document.getElementById("modeInstruction");
 const targetList = document.getElementById("targetList");
 const currentTarget = document.getElementById("currentTarget");
 const feedback = document.getElementById("feedback");
 const slices = document.getElementById("sliceContainer");
 const monsterFace = document.getElementById("monsterFace");
-const resetButton = document.getElementById("resetButton");
-const nextChallengeButton = document.getElementById("nextChallengeButton");
-const modeInstruction = document.getElementById("modeInstruction");
-const modeInputs = document.querySelectorAll('input[name="mode"]');
-const levelInputs = document.querySelectorAll('input[name="level"]');
 
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -126,37 +122,26 @@ function shuffle(values) {
 }
 
 function createDefaultUnlockState() {
-  return {
-    addition: 1,
-    subtraction: 1,
-    multiplication: 1,
-    division: 1,
-  };
+  return { addition: 1, subtraction: 1, multiplication: 1, division: 1 };
 }
 
-function sanitizeUnlockState(rawValue) {
-  const defaults = createDefaultUnlockState();
-  const safe = { ...defaults };
-  if (!rawValue || typeof rawValue !== "object") {
-    return safe;
-  }
+function sanitizeUnlockState(raw) {
+  const base = createDefaultUnlockState();
+  if (!raw || typeof raw !== "object") return base;
 
-  Object.keys(defaults).forEach((mode) => {
-    const value = Number(rawValue[mode]);
+  Object.keys(base).forEach((mode) => {
+    const value = Number(raw[mode]);
     if (Number.isInteger(value) && value >= 1 && value <= 5) {
-      safe[mode] = value;
+      base[mode] = value;
     }
   });
-  return safe;
+  return base;
 }
 
 function loadUnlockState() {
   try {
     const stored = localStorage.getItem(PROGRESS_STORAGE_KEY);
-    if (!stored) {
-      return createDefaultUnlockState();
-    }
-    return sanitizeUnlockState(JSON.parse(stored));
+    return stored ? sanitizeUnlockState(JSON.parse(stored)) : createDefaultUnlockState();
   } catch (_err) {
     return createDefaultUnlockState();
   }
@@ -166,16 +151,43 @@ function saveUnlockState() {
   try {
     localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(state.unlockedLevels));
   } catch (_err) {
-    // Ignore localStorage failures and continue with in-memory progress.
+    // ignore persistence errors
+  }
+}
+
+function isLevelUnlocked(mode, level) {
+  return level <= state.unlockedLevels[mode];
+}
+
+function ensureSelectedLevelUnlocked() {
+  if (!isLevelUnlocked(state.mode, state.level)) {
+    state.level = state.unlockedLevels[state.mode];
   }
 }
 
 function getRuleSet() {
   const operation = OPERATION_RULES[state.mode];
-  return {
-    operation,
-    levelRules: operation.levels[state.level],
-  };
+  return { operation, levelRules: operation.levels[state.level] };
+}
+
+function syncModeInputs() {
+  modeInputs.forEach((input) => {
+    input.checked = input.value === state.mode;
+  });
+}
+
+function syncLevelInputs() {
+  levelInputs.forEach((input) => {
+    const level = Number(input.value);
+    input.disabled = !isLevelUnlocked(state.mode, level);
+    input.checked = level === state.level;
+  });
+}
+
+function setScreen(screen) {
+  state.screen = screen;
+  menuScreen.classList.toggle("hidden", screen !== "menu");
+  gameScreen.classList.toggle("hidden", screen !== "game");
 }
 
 function updateModeInstruction() {
@@ -183,47 +195,24 @@ function updateModeInstruction() {
   modeInstruction.textContent = `Pick two slices that make the current target with ${operation.symbol} at Level ${state.level}!`;
 }
 
-function isLevelUnlocked(mode, level) {
-  return level <= state.unlockedLevels[mode];
+function setFeedback(message, type = "") {
+  feedback.textContent = message;
+  feedback.className = `feedback ${type}`.trim();
 }
 
-function maxUnlockedLevel(mode) {
-  return state.unlockedLevels[mode];
+function hideNextChallenge() {
+  nextChallengeButton.classList.add("hidden");
 }
 
-function syncLevelSelectorDisabledState() {
-  levelInputs.forEach((input) => {
-    const level = Number(input.value);
-    input.disabled = !isLevelUnlocked(state.mode, level);
-  });
-}
-
-function syncSelectors() {
-  modeInputs.forEach((input) => {
-    input.checked = input.value === state.mode;
-  });
-
-  syncLevelSelectorDisabledState();
-
-  levelInputs.forEach((input) => {
-    input.checked = Number(input.value) === state.level;
-  });
-}
-
-function ensureSelectedLevelUnlocked() {
-  if (!isLevelUnlocked(state.mode, state.level)) {
-    state.level = maxUnlockedLevel(state.mode);
-  }
+function showNextChallenge(level) {
+  nextChallengeButton.textContent = `Next Challenge: Level ${level}`;
+  nextChallengeButton.classList.remove("hidden");
 }
 
 function makeStep() {
   const { operation, levelRules } = getRuleSet();
   const pair = operation.createPair(levelRules);
-  return {
-    target: operation.targetFromPair(pair),
-    pair,
-    op: operation.symbol,
-  };
+  return { target: operation.targetFromPair(pair), pair, op: operation.symbol };
 }
 
 function generateRound() {
@@ -234,30 +223,16 @@ function generateRound() {
     gamePlan.push(makeStep());
   }
 
-  return {
-    gamePlan,
-    sliceValues: shuffle(gamePlan.flatMap((step) => step.pair)),
-  };
-}
-
-function setFeedback(message, type = "") {
-  feedback.textContent = message;
-  feedback.className = `feedback ${type}`.trim();
+  return { gamePlan, sliceValues: shuffle(gamePlan.flatMap((step) => step.pair)) };
 }
 
 function updateTargets() {
   targetList.innerHTML = "";
-
   state.gamePlan.forEach((step, idx) => {
     const li = document.createElement("li");
     li.textContent = step.target;
-
-    if (idx < state.currentTargetIndex) {
-      li.classList.add("eaten");
-    } else if (idx === state.currentTargetIndex) {
-      li.classList.add("active");
-    }
-
+    if (idx < state.currentTargetIndex) li.classList.add("eaten");
+    if (idx === state.currentTargetIndex) li.classList.add("active");
     targetList.appendChild(li);
   });
 
@@ -270,11 +245,7 @@ function createSliceButton(value, idx) {
   btn.className = "slice";
   btn.type = "button";
   btn.textContent = value;
-
-  if (state.usedNumbers.has(idx)) {
-    btn.disabled = true;
-  }
-
+  if (state.usedNumbers.has(idx)) btn.disabled = true;
   btn.addEventListener("click", () => handleSliceSelection(idx, value));
   return btn;
 }
@@ -283,9 +254,7 @@ function renderSlices() {
   slices.innerHTML = "";
   state.sliceValues.forEach((value, idx) => {
     const btn = createSliceButton(value, idx);
-    if (state.selected.some((pick) => pick.id === idx)) {
-      btn.classList.add("selected");
-    }
+    if (state.selected.some((pick) => pick.id === idx)) btn.classList.add("selected");
     slices.appendChild(btn);
   });
 }
@@ -295,26 +264,17 @@ function clearSelection() {
   renderSlices();
 }
 
-function hideNextChallenge() {
-  nextChallengeButton.classList.add("hidden");
-}
-
-function showNextChallenge(nextLevel) {
-  nextChallengeButton.textContent = `Next Challenge: Level ${nextLevel}`;
-  nextChallengeButton.classList.remove("hidden");
-}
-
 function completeCurrentLevel() {
   state.levelCompleted = true;
-  const currentUnlocked = state.unlockedLevels[state.mode];
   const nextLevel = state.level + 1;
+  const previouslyUnlocked = state.unlockedLevels[state.mode];
 
-  if (nextLevel <= 5 && nextLevel > currentUnlocked) {
+  if (nextLevel <= 5 && nextLevel > previouslyUnlocked) {
     state.unlockedLevels[state.mode] = nextLevel;
     saveUnlockState();
   }
 
-  syncSelectors();
+  syncLevelInputs();
 
   if (nextLevel <= 5) {
     showNextChallenge(nextLevel);
@@ -327,13 +287,11 @@ function completeCurrentLevel() {
 
 function checkSelection() {
   if (state.selected.length < 2) return;
-
   const [a, b] = state.selected;
   const active = state.gamePlan[state.currentTargetIndex];
   if (!active) return;
 
-  const { operation } = getRuleSet();
-  const possibleResults = operation.matchResults(a.value, b.value);
+  const possibleResults = getRuleSet().operation.matchResults(a.value, b.value);
   const isMatch = possibleResults.includes(active.target);
 
   if (isMatch) {
@@ -367,16 +325,12 @@ function handleSliceSelection(id, value) {
   }
 
   if (state.selected.length === 2) return;
-
   state.selected.push({ id, value });
   renderSlices();
-
-  if (state.selected.length === 2) {
-    checkSelection();
-  }
+  if (state.selected.length === 2) checkSelection();
 }
 
-function resetGame() {
+function startRound() {
   ensureSelectedLevelUnlocked();
   const newRound = generateRound();
   state.gamePlan = newRound.gamePlan;
@@ -387,49 +341,62 @@ function resetGame() {
   state.levelCompleted = false;
   monsterFace.textContent = "😋";
 
-  const { operation } = getRuleSet();
-  setFeedback(`Select two slices to solve each target with ${operation.symbol} (Level ${state.level}).`);
   hideNextChallenge();
-  syncSelectors();
+  syncModeInputs();
+  syncLevelInputs();
   updateModeInstruction();
+  setFeedback(`Select two slices to solve each target with ${getRuleSet().operation.symbol} (Level ${state.level}).`);
   updateTargets();
   renderSlices();
+}
+
+function startGame() {
+  startRound();
+  setScreen("game");
+}
+
+function backToMenu() {
+  syncModeInputs();
+  syncLevelInputs();
+  setScreen("menu");
 }
 
 modeInputs.forEach((input) => {
   input.addEventListener("change", () => {
     state.mode = input.value;
     ensureSelectedLevelUnlocked();
-    resetGame();
+    syncLevelInputs();
   });
 });
 
 levelInputs.forEach((input) => {
   input.addEventListener("change", () => {
-    const chosenLevel = Number(input.value);
-    if (!isLevelUnlocked(state.mode, chosenLevel)) {
-      syncSelectors();
+    const chosen = Number(input.value);
+    if (!isLevelUnlocked(state.mode, chosen)) {
+      syncLevelInputs();
       return;
     }
-    state.level = chosenLevel;
-    resetGame();
+    state.level = chosen;
   });
 });
 
+startGameButton.addEventListener("click", startGame);
+backToMenuButton.addEventListener("click", backToMenu);
+resetButton.addEventListener("click", startRound);
 nextChallengeButton.addEventListener("click", () => {
-  const nextLevel = state.level + 1;
-  if (nextLevel <= 5 && isLevelUnlocked(state.mode, nextLevel)) {
-    state.level = nextLevel;
-    resetGame();
+  const next = state.level + 1;
+  if (next <= 5 && isLevelUnlocked(state.mode, next)) {
+    state.level = next;
+    startRound();
   }
 });
 
-resetButton.addEventListener("click", resetGame);
-
 function initGame() {
   state.unlockedLevels = loadUnlockState();
-  syncSelectors();
-  resetGame();
+  ensureSelectedLevelUnlocked();
+  syncModeInputs();
+  syncLevelInputs();
+  setScreen("menu");
 }
 
 initGame();

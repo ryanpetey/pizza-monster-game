@@ -1,5 +1,4 @@
 :root {
-  --bg: #fff6de;
   --card: #ffffff;
   --text: #442100;
   --accent: #ff7a00;
@@ -32,12 +31,23 @@ body {
   padding: 1.2rem;
 }
 
+.screen.hidden {
+  display: none;
+}
+
 .game-header {
   text-align: center;
 }
 
 .game-header h1 {
   margin-bottom: 0.2rem;
+}
+
+.menu-screen {
+  min-height: 480px;
+  display: grid;
+  align-content: center;
+  gap: 0.4rem;
 }
 
 .mode-picker,
@@ -47,7 +57,7 @@ body {
   justify-content: center;
   align-items: center;
   gap: 0.6rem;
-  margin: 0.4rem 0 0.8rem;
+  margin: 0.4rem 0;
   font-weight: 700;
 }
 
@@ -86,17 +96,64 @@ body {
   border-style: dashed;
 }
 
+.start-btn {
+  display: block;
+  margin: 0.6rem auto 0;
+  border: none;
+  border-radius: 999px;
+  background: #38a34b;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  padding: 0.7rem 1.4rem;
+  cursor: pointer;
+}
+
+.start-btn:hover {
+  background: #27863a;
+}
+
+.game-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.7rem;
+  margin-bottom: 0.4rem;
+}
+
+.back-btn,
+.reset-btn,
+.next-btn {
+  border: none;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.back-btn {
+  background: #7d8b9c;
+  padding: 0.55rem 1rem;
+}
+
+.back-btn:hover {
+  background: #647283;
+}
+
+.reset-btn {
+  background: var(--accent);
+  padding: 0.55rem 1rem;
+}
+
+.reset-btn:hover {
+  background: var(--accent-dark);
+}
+
 .next-btn {
   display: block;
   margin: 0.2rem auto 0.9rem;
-  border: none;
-  border-radius: 999px;
   background: #4f9cff;
-  color: #fff;
   font-size: 0.95rem;
-  font-weight: 700;
   padding: 0.55rem 1.1rem;
-  cursor: pointer;
 }
 
 .next-btn:hover {
@@ -171,7 +228,7 @@ body {
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.8rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.2rem;
 }
 
 .slice {
@@ -221,21 +278,4 @@ body {
   opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;
-}
-
-.reset-btn {
-  display: block;
-  margin: 0 auto;
-  border: none;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 700;
-  padding: 0.6rem 1.2rem;
-  cursor: pointer;
-}
-
-.reset-btn:hover {
-  background: var(--accent-dark);
 }

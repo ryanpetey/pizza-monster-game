@@ -8,47 +8,61 @@
   </head>
   <body>
     <main class="game">
-      <header class="game-header">
-        <h1>🍕 Pizza Monster</h1>
-        <p id="modeInstruction">Pick two slices that make the current target with + at Level 1!</p>
-      </header>
+      <section id="menuScreen" class="screen menu-screen">
+        <header class="game-header">
+          <h1>🍕 Pizza Monster</h1>
+          <p>Choose your operation and level, then start your challenge!</p>
+        </header>
 
-      <section class="mode-picker" aria-label="Round mode selector">
-        <span class="mode-label">Round mode:</span>
-        <label class="mode-option"><input type="radio" name="mode" value="addition" checked /><span>Addition</span></label>
-        <label class="mode-option"><input type="radio" name="mode" value="subtraction" /><span>Subtraction</span></label>
-        <label class="mode-option"><input type="radio" name="mode" value="multiplication" /><span>Multiplication</span></label>
-        <label class="mode-option"><input type="radio" name="mode" value="division" /><span>Division</span></label>
+        <section class="mode-picker" aria-label="Round mode selector">
+          <span class="mode-label">Operation:</span>
+          <label class="mode-option"><input type="radio" name="mode" value="addition" checked /><span>Addition</span></label>
+          <label class="mode-option"><input type="radio" name="mode" value="subtraction" /><span>Subtraction</span></label>
+          <label class="mode-option"><input type="radio" name="mode" value="multiplication" /><span>Multiplication</span></label>
+          <label class="mode-option"><input type="radio" name="mode" value="division" /><span>Division</span></label>
+        </section>
+
+        <section class="level-picker" aria-label="Difficulty level selector">
+          <span class="mode-label">Level:</span>
+          <label class="mode-option"><input type="radio" name="level" value="1" checked /><span>1</span></label>
+          <label class="mode-option"><input type="radio" name="level" value="2" /><span>2</span></label>
+          <label class="mode-option"><input type="radio" name="level" value="3" /><span>3</span></label>
+          <label class="mode-option"><input type="radio" name="level" value="4" /><span>4</span></label>
+          <label class="mode-option"><input type="radio" name="level" value="5" /><span>5</span></label>
+        </section>
+
+        <button id="startGameButton" class="start-btn" type="button">Start Game</button>
       </section>
 
-      <section class="level-picker" aria-label="Difficulty level selector">
-        <span class="mode-label">Level:</span>
-        <label class="mode-option"><input type="radio" name="level" value="1" checked /><span>1</span></label>
-        <label class="mode-option"><input type="radio" name="level" value="2" /><span>2</span></label>
-        <label class="mode-option"><input type="radio" name="level" value="3" /><span>3</span></label>
-        <label class="mode-option"><input type="radio" name="level" value="4" /><span>4</span></label>
-        <label class="mode-option"><input type="radio" name="level" value="5" /><span>5</span></label>
+      <section id="gameScreen" class="screen game-screen hidden">
+        <header class="game-header">
+          <h1>🍕 Pizza Monster</h1>
+          <p id="modeInstruction">Pick two slices that make the current target!</p>
+        </header>
+
+        <div class="game-actions">
+          <button id="backToMenuButton" class="back-btn" type="button">Back to Menu</button>
+          <button id="resetButton" class="reset-btn" type="button">New Game</button>
+        </div>
+
+        <section class="monster-box" aria-live="polite">
+          <div class="monster" id="monsterFace">😋</div>
+          <p id="targetLabel">Target to eat: <strong id="currentTarget">--</strong></p>
+        </section>
+
+        <section class="targets" aria-label="Target numbers">
+          <h2>Targets</h2>
+          <ul id="targetList"></ul>
+        </section>
+
+        <section class="feedback" aria-live="polite" id="feedback">
+          Select two number slices to start.
+        </section>
+
+        <button id="nextChallengeButton" class="next-btn hidden" type="button">Next Challenge</button>
+
+        <section class="slices" aria-label="Number slices" id="sliceContainer"></section>
       </section>
-
-      <section class="monster-box" aria-live="polite">
-        <div class="monster" id="monsterFace">😋</div>
-        <p id="targetLabel">Target to eat: <strong id="currentTarget">--</strong></p>
-      </section>
-
-      <section class="targets" aria-label="Target numbers">
-        <h2>Targets</h2>
-        <ul id="targetList"></ul>
-      </section>
-
-      <section class="feedback" aria-live="polite" id="feedback">
-        Select two number slices to start.
-      </section>
-
-      <button id="nextChallengeButton" class="next-btn hidden" type="button">Next Challenge</button>
-
-      <section class="slices" aria-label="Number slices" id="sliceContainer"></section>
-
-      <button id="resetButton" class="reset-btn" type="button">New Game</button>
     </main>
 
     <script src="script.js"></script>
