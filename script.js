@@ -4,16 +4,64 @@ const MAX_SLICE = 9;
 
 const MODE_CONFIG = {
   addition: {
-    label: "Addition",
     symbol: "+",
-    range: [MIN_SLICE, MAX_SLICE],
-    apply: (a, b) => a + b,
+    createPair: () => {
+      const a = randomInt(MIN_SLICE, MAX_SLICE);
+      const b = randomInt(MIN_SLICE, MAX_SLICE);
+      return [a, b];
+    },
+    targetFromPair: ([a, b]) => a + b,
+    matchResults: (a, b) => [a + b],
+  },
+  subtraction: {
+    symbol: "−",
+    createPair: () => {
+      const low = randomInt(1, 8);
+      const delta = randomInt(1, 8 - low + 1);
+      const high = low + delta;
+      return [high, low];
+    },
+    targetFromPair: ([a, b]) => a - b,
+    matchResults: (a, b) => {
+      const results = [];
+      if (a > b) {
+        results.push(a - b);
+      }
+      if (b > a) {
+        results.push(b - a);
+      }
+      return results;
+    },
   },
   multiplication: {
-    label: "Multiplication",
     symbol: "×",
-    range: [1, 6],
-    apply: (a, b) => a * b,
+    createPair: () => {
+      const a = randomInt(1, 6);
+      const b = randomInt(1, 6);
+      return [a, b];
+    },
+    targetFromPair: ([a, b]) => a * b,
+    matchResults: (a, b) => [a * b],
+  },
+  division: {
+    symbol: "÷",
+    createPair: () => {
+      const divisor = randomInt(1, 6);
+      const quotient = randomInt(1, 6);
+      const dividend = divisor * quotient;
+      return [dividend, divisor];
+    },
+    targetFromPair: ([a, b]) => a / b,
+    matchResults: (a, b) => {
+      const results = [];
+      if (b !== 0 && a % b === 0) {
+        results.push(a / b);
+      }
+      if (a !== 0 && b % a === 0) {
+        results.push(b / a);
+      }
+      return results;
+    },
   },
 };
 
@@ -55,12 +103,10 @@ function updateModeInstruction() {
 
 function makeStep() {
   const mode = MODE_CONFIG[state.mode];
-  const [min, max] = mode.range;
-  const a = randomInt(min, max);
-  const b = randomInt(min, max);
+  const pair = mode.createPair();
   return {
-    target: mode.apply(a, b),
-    pair: [a, b],
+    target: mode.targetFromPair(pair),
+    pair,
     op: mode.symbol,
   };
 }
@@ -145,15 +191,15 @@ function checkSelection() {
     return;
   }
 
-  const result = MODE_CONFIG[state.mode].apply(a.value, b.value);
-  const isMatch = result === active.target;
+  const possibleResults = MODE_CONFIG[state.mode].matchResults(a.value, b.value);
+  const isMatch = possibleResults.includes(active.target);
 
   if (isMatch) {
     state.usedNumbers.add(a.id);
     state.usedNumbers.add(b.id);
     state.currentTargetIndex += 1;
     monsterFace.textContent = "😋";
-    setFeedback(`Yum! ${a.value} ${active.op} ${b.value} made ${active.target}!`, "good");
+    setFeedback(`Yum! ${a.value} ${active.op} ${b.value} can make ${active.target}!`, "good");
   } else {
     monsterFace.textContent = "😵";
     setFeedback(`Oops! ${a.value} ${active.op} ${b.value} does not make ${active.target}. Try again!`, "bad");
@@ -214,4 +260,4 @@ modeInputs.forEach((input) => {
 });
 
 resetButton.addEventListener("click", resetGame);
-resetGame();
+resetGame(); 
