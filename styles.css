@@ -40,6 +40,26 @@ body {
   margin-bottom: 0.2rem;
 }
 
+.mode-picker {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0.4rem 0 0.8rem;
+  font-weight: 700;
+}
+
+.mode-label {
+  color: #6a3300;
+}
+
+.mode-picker label {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
 .monster-box {
   display: grid;
   justify-items: center;

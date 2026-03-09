@@ -10,11 +10,17 @@
     <main class="game">
       <header class="game-header">
         <h1>🍕 Pizza Monster</h1>
-        <p>Pick two slices that make the current target with + or ×!</p>
+        <p id="modeInstruction">Pick two slices that make the current target with +!</p>
       </header>
 
+      <section class="mode-picker" aria-label="Round mode selector">
+        <span class="mode-label">Round mode:</span>
+        <label><input type="radio" name="mode" value="addition" checked /> Addition</label>
+        <label><input type="radio" name="mode" value="multiplication" /> Multiplication</label>
+      </section>
+
       <section class="monster-box" aria-live="polite">
-        <div class="monster" id="monsterFace">👹</div>
+        <div class="monster" id="monsterFace">😋</div>
         <p id="targetLabel">Target to eat: <strong id="currentTarget">--</strong></p>
       </section>
 

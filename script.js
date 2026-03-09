@@ -2,12 +2,28 @@ const ROUND_LENGTH = 4;
 const MIN_SLICE = 1;
 const MAX_SLICE = 9;
 
+const MODE_CONFIG = {
+  addition: {
+    label: "Addition",
+    symbol: "+",
+    range: [MIN_SLICE, MAX_SLICE],
+    apply: (a, b) => a + b,
+  },
+  multiplication: {
+    label: "Multiplication",
+    symbol: "×",
+    range: [1, 6],
+    apply: (a, b) => a * b,
+  },
+};
+
 const state = {
   selected: [],
   currentTargetIndex: 0,
   usedNumbers: new Set(),
   gamePlan: [],
   sliceValues: [],
+  mode: "addition",
 };
 
 const targetList = document.getElementById("targetList");
@@ -16,6 +32,8 @@ const feedback = document.getElementById("feedback");
 const slices = document.getElementById("sliceContainer");
 const monsterFace = document.getElementById("monsterFace");
 const resetButton = document.getElementById("resetButton");
+const modeInstruction = document.getElementById("modeInstruction");
+const modeInputs = document.querySelectorAll('input[name="mode"]');
 
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -30,18 +48,21 @@ function shuffle(values) {
   return clone;
 }
 
+function updateModeInstruction() {
+  const mode = MODE_CONFIG[state.mode];
+  modeInstruction.textContent = `Pick two slices that make the current target with ${mode.symbol}!`;
+}
+
 function makeStep() {
-  const useMultiply = Math.random() < 0.5;
-
-  if (useMultiply) {
-    const a = randomInt(1, 6);
-    const b = randomInt(1, 6);
-    return { target: a * b, pair: [a, b], op: "×" };
-  }
-
-  const a = randomInt(MIN_SLICE, MAX_SLICE);
-  const b = randomInt(MIN_SLICE, MAX_SLICE);
-  return { target: a + b, pair: [a, b], op: "+" };
+  const mode = MODE_CONFIG[state.mode];
+  const [min, max] = mode.range;
+  const a = randomInt(min, max);
+  const b = randomInt(min, max);
+  return {
+    target: mode.apply(a, b),
+    pair: [a, b],
+    op: mode.symbol,
+  };
 }
 
 function generateRound() {
@@ -124,19 +145,18 @@ function checkSelection() {
     return;
   }
 
-  const addition = a.value + b.value;
-  const multiplication = a.value * b.value;
-  const isMatch = addition === active.target || multiplication === active.target;
+  const result = MODE_CONFIG[state.mode].apply(a.value, b.value);
+  const isMatch = result === active.target;
 
   if (isMatch) {
     state.usedNumbers.add(a.id);
     state.usedNumbers.add(b.id);
     state.currentTargetIndex += 1;
-    monsterFace.textContent = "👹";
-    setFeedback(`Yum! ${a.value} + ${b.value} or ${a.value} × ${b.value} made ${active.target}!`, "good");
+    monsterFace.textContent = "😋";
+    setFeedback(`Yum! ${a.value} ${active.op} ${b.value} made ${active.target}!`, "good");
   } else {
     monsterFace.textContent = "😵";
-    setFeedback(`Oops! ${a.value} and ${b.value} do not make ${active.target}. Try again!`, "bad");
+    setFeedback(`Oops! ${a.value} ${active.op} ${b.value} does not make ${active.target}. Try again!`, "bad");
   }
 
   clearSelection();
@@ -179,11 +199,19 @@ function resetGame() {
   state.selected = [];
   state.currentTargetIndex = 0;
   state.usedNumbers = new Set();
-  monsterFace.textContent = "👹";
-  setFeedback("Select two number slices to start.");
+  monsterFace.textContent = "😋";
+  setFeedback(`Select two number slices to make each target with ${MODE_CONFIG[state.mode].symbol}.`);
+  updateModeInstruction();
   updateTargets();
   renderSlices();
 }
+
+modeInputs.forEach((input) => {
+  input.addEventListener("change", () => {
+    state.mode = input.value;
+    resetGame();
+  });
+});
 
 resetButton.addEventListener("click", resetGame);
 resetGame();
