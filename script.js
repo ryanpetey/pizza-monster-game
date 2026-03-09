@@ -1,4 +1,5 @@
 const LEVEL_RANGE = [1, 2, 3, 4, 5];
+const PROGRESS_STORAGE_KEY = "pizza-monster-unlocks-v1";
 
 const OPERATION_RULES = {
   addition: {
@@ -12,9 +13,7 @@ const OPERATION_RULES = {
     },
     createPair: ({ range }) => {
       const [min, max] = range;
-      const a = randomInt(min, max);
-      const b = randomInt(min, max);
-      return [a, b];
+      return [randomInt(min, max), randomInt(min, max)];
     },
     targetFromPair: ([a, b]) => a + b,
     matchResults: (a, b) => [a + b],
@@ -31,8 +30,7 @@ const OPERATION_RULES = {
     createPair: ({ lowRange, diffRange }) => {
       const low = randomInt(lowRange[0], lowRange[1]);
       const diff = randomInt(diffRange[0], diffRange[1]);
-      const high = low + diff;
-      return [high, low];
+      return [low + diff, low];
     },
     targetFromPair: ([a, b]) => a - b,
     matchResults: (a, b) => {
@@ -52,9 +50,10 @@ const OPERATION_RULES = {
       5: { factorRange: [4, 12], roundLength: 6 },
     },
     createPair: ({ factorRange }) => {
-      const a = randomInt(factorRange[0], factorRange[1]);
-      const b = randomInt(factorRange[0], factorRange[1]);
-      return [a, b];
+      return [
+        randomInt(factorRange[0], factorRange[1]),
+        randomInt(factorRange[0], factorRange[1]),
+      ];
     },
     targetFromPair: ([a, b]) => a * b,
     matchResults: (a, b) => [a * b],
@@ -71,8 +70,7 @@ const OPERATION_RULES = {
     createPair: ({ divisorRange, quotientRange }) => {
       const divisor = randomInt(divisorRange[0], divisorRange[1]);
       const quotient = randomInt(quotientRange[0], quotientRange[1]);
-      const dividend = divisor * quotient;
-      return [dividend, divisor];
+      return [divisor * quotient, divisor];
     },
     targetFromPair: ([a, b]) => a / b,
     matchResults: (a, b) => {
@@ -84,6 +82,13 @@ const OPERATION_RULES = {
   },
 };
 
+const OPERATION_NAMES = {
+  addition: "Addition",
+  subtraction: "Subtraction",
+  multiplication: "Multiplication",
+  division: "Division",
+};
+
 const state = {
   selected: [],
   currentTargetIndex: 0,
@@ -92,6 +97,8 @@ const state = {
   sliceValues: [],
   mode: "addition",
   level: 1,
+  unlockedLevels: null,
+  levelCompleted: false,
 };
 
 const targetList = document.getElementById("targetList");
@@ -100,6 +107,7 @@ const feedback = document.getElementById("feedback");
 const slices = document.getElementById("sliceContainer");
 const monsterFace = document.getElementById("monsterFace");
 const resetButton = document.getElementById("resetButton");
+const nextChallengeButton = document.getElementById("nextChallengeButton");
 const modeInstruction = document.getElementById("modeInstruction");
 const modeInputs = document.querySelectorAll('input[name="mode"]');
 const levelInputs = document.querySelectorAll('input[name="level"]');
@@ -117,6 +125,51 @@ function shuffle(values) {
   return clone;
 }
 
+function createDefaultUnlockState() {
+  return {
+    addition: 1,
+    subtraction: 1,
+    multiplication: 1,
+    division: 1,
+  };
+}
+
+function sanitizeUnlockState(rawValue) {
+  const defaults = createDefaultUnlockState();
+  const safe = { ...defaults };
+  if (!rawValue || typeof rawValue !== "object") {
+    return safe;
+  }
+
+  Object.keys(defaults).forEach((mode) => {
+    const value = Number(rawValue[mode]);
+    if (Number.isInteger(value) && value >= 1 && value <= 5) {
+      safe[mode] = value;
+    }
+  });
+  return safe;
+}
+
+function loadUnlockState() {
+  try {
+    const stored = localStorage.getItem(PROGRESS_STORAGE_KEY);
+    if (!stored) {
+      return createDefaultUnlockState();
+    }
+    return sanitizeUnlockState(JSON.parse(stored));
+  } catch (_err) {
+    return createDefaultUnlockState();
+  }
+}
+
+function saveUnlockState() {
+  try {
+    localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(state.unlockedLevels));
+  } catch (_err) {
+    // Ignore localStorage failures and continue with in-memory progress.
+  }
+}
+
 function getRuleSet() {
   const operation = OPERATION_RULES[state.mode];
   return {
@@ -128,6 +181,39 @@ function getRuleSet() {
 function updateModeInstruction() {
   const { operation } = getRuleSet();
   modeInstruction.textContent = `Pick two slices that make the current target with ${operation.symbol} at Level ${state.level}!`;
+}
+
+function isLevelUnlocked(mode, level) {
+  return level <= state.unlockedLevels[mode];
+}
+
+function maxUnlockedLevel(mode) {
+  return state.unlockedLevels[mode];
+}
+
+function syncLevelSelectorDisabledState() {
+  levelInputs.forEach((input) => {
+    const level = Number(input.value);
+    input.disabled = !isLevelUnlocked(state.mode, level);
+  });
+}
+
+function syncSelectors() {
+  modeInputs.forEach((input) => {
+    input.checked = input.value === state.mode;
+  });
+
+  syncLevelSelectorDisabledState();
+
+  levelInputs.forEach((input) => {
+    input.checked = Number(input.value) === state.level;
+  });
+}
+
+function ensureSelectedLevelUnlocked() {
+  if (!isLevelUnlocked(state.mode, state.level)) {
+    state.level = maxUnlockedLevel(state.mode);
+  }
 }
 
 function makeStep() {
@@ -148,8 +234,10 @@ function generateRound() {
     gamePlan.push(makeStep());
   }
 
-  const sliceValues = shuffle(gamePlan.flatMap((step) => step.pair));
-  return { gamePlan, sliceValues };
+  return {
+    gamePlan,
+    sliceValues: shuffle(gamePlan.flatMap((step) => step.pair)),
+  };
 }
 
 function setFeedback(message, type = "") {
@@ -182,7 +270,6 @@ function createSliceButton(value, idx) {
   btn.className = "slice";
   btn.type = "button";
   btn.textContent = value;
-  btn.dataset.id = String(idx);
 
   if (state.usedNumbers.has(idx)) {
     btn.disabled = true;
@@ -206,6 +293,36 @@ function renderSlices() {
 function clearSelection() {
   state.selected = [];
   renderSlices();
+}
+
+function hideNextChallenge() {
+  nextChallengeButton.classList.add("hidden");
+}
+
+function showNextChallenge(nextLevel) {
+  nextChallengeButton.textContent = `Next Challenge: Level ${nextLevel}`;
+  nextChallengeButton.classList.remove("hidden");
+}
+
+function completeCurrentLevel() {
+  state.levelCompleted = true;
+  const currentUnlocked = state.unlockedLevels[state.mode];
+  const nextLevel = state.level + 1;
+
+  if (nextLevel <= 5 && nextLevel > currentUnlocked) {
+    state.unlockedLevels[state.mode] = nextLevel;
+    saveUnlockState();
+  }
+
+  syncSelectors();
+
+  if (nextLevel <= 5) {
+    showNextChallenge(nextLevel);
+    setFeedback(`Great job! ${OPERATION_NAMES[state.mode]} Level ${state.level} complete. Next level unlocked!`, "good");
+  } else {
+    hideNextChallenge();
+    setFeedback(`Amazing! You finished all 5 ${OPERATION_NAMES[state.mode]} levels!`, "good");
+  }
 }
 
 function checkSelection() {
@@ -235,12 +352,12 @@ function checkSelection() {
 
   if (state.currentTargetIndex >= state.gamePlan.length) {
     monsterFace.textContent = "🥳";
-    setFeedback("Pizza Monster is full! You ate every target!", "good");
+    completeCurrentLevel();
   }
 }
 
 function handleSliceSelection(id, value) {
-  if (state.usedNumbers.has(id)) return;
+  if (state.levelCompleted || state.usedNumbers.has(id)) return;
 
   const existingIndex = state.selected.findIndex((pick) => pick.id === id);
   if (existingIndex >= 0) {
@@ -254,20 +371,26 @@ function handleSliceSelection(id, value) {
   state.selected.push({ id, value });
   renderSlices();
 
-  if (state.selected.length === 2) checkSelection();
+  if (state.selected.length === 2) {
+    checkSelection();
+  }
 }
 
 function resetGame() {
+  ensureSelectedLevelUnlocked();
   const newRound = generateRound();
   state.gamePlan = newRound.gamePlan;
   state.sliceValues = newRound.sliceValues;
   state.selected = [];
   state.currentTargetIndex = 0;
   state.usedNumbers = new Set();
+  state.levelCompleted = false;
   monsterFace.textContent = "😋";
 
   const { operation } = getRuleSet();
   setFeedback(`Select two slices to solve each target with ${operation.symbol} (Level ${state.level}).`);
+  hideNextChallenge();
+  syncSelectors();
   updateModeInstruction();
   updateTargets();
   renderSlices();
@@ -276,27 +399,37 @@ function resetGame() {
 modeInputs.forEach((input) => {
   input.addEventListener("change", () => {
     state.mode = input.value;
+    ensureSelectedLevelUnlocked();
     resetGame();
   });
 });
 
 levelInputs.forEach((input) => {
   input.addEventListener("change", () => {
-    state.level = Number(input.value);
+    const chosenLevel = Number(input.value);
+    if (!isLevelUnlocked(state.mode, chosenLevel)) {
+      syncSelectors();
+      return;
+    }
+    state.level = chosenLevel;
     resetGame();
   });
 });
 
-function initSelectors() {
-  modeInputs.forEach((input) => {
-    input.checked = input.value === state.mode;
-  });
-  levelInputs.forEach((input) => {
-    const level = Number(input.value);
-    input.checked = level === state.level && LEVEL_RANGE.includes(level);
-  });
-}
+nextChallengeButton.addEventListener("click", () => {
+  const nextLevel = state.level + 1;
+  if (nextLevel <= 5 && isLevelUnlocked(state.mode, nextLevel)) {
+    state.level = nextLevel;
+    resetGame();
+  }
+});
 
 resetButton.addEventListener("click", resetGame);
-initSelectors();
-resetGame();
+
+function initGame() {
+  state.unlockedLevels = loadUnlockState();
+  syncSelectors();
+  resetGame();
+}
+
+initGame();

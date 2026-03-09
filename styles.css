@@ -80,6 +80,33 @@ body {
   box-shadow: 0 0 0 2px rgba(255, 122, 0, 0.2);
 }
 
+.mode-option input:disabled + span {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.next-btn {
+  display: block;
+  margin: 0.2rem auto 0.9rem;
+  border: none;
+  border-radius: 999px;
+  background: #4f9cff;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 0.55rem 1.1rem;
+  cursor: pointer;
+}
+
+.next-btn:hover {
+  background: #2f84f2;
+}
+
+.hidden {
+  display: none;
+}
+
 .monster-box {
   display: grid;
   justify-items: center;
